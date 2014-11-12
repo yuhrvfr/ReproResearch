@@ -127,12 +127,12 @@ fmd <- format(round(median(pa1mgsumbd$total_steps),2),nsall=2)
 
 **Compare the mean and median values in the 2 cases: Without the NAs and with the NAs replaced by the average values.**
 
-```{r}
+```{r results='asis'}
 library(xtable)
 x <- data.frame(Case=c("Without_NAs","Replaced_NAs_with_mean"),
                 Mean=c(mnd,fmn),
                 Median=c(med,fmd))
-xt <- x
+xt <- xtable(x)
 print(xt,type="html")
 ```
 
