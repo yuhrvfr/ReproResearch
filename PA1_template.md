@@ -1,91 +1,263 @@
-# Reproducible Research: Peer Assessment 1
-
-# Objectives:
-
-## 1) Data analysis of Dataset: https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip
-  
-  The variables included in this dataset are:
-  * steps: Number of steps taking in a 5-minute interval (missing values are coded as NA)
-  * date: The date on which the measurement was taken in YYYY-MM-DD format
-  * interval: Identifier for the 5-minute interval in which measurement was taken
-
-## 2) Write a literate report to answer the questions.
-	   
-### Loading and preprocessing the data
-
-    Note Ignore the missing values in the dataset.
-   
-
-### What is mean total number of steps taken per day?
-
-    1) Make a histogram of the total number of steps taken each day
-    2) Calculate and report the mean and median total number of steps taken per day.
+---
+title: "Reproducible Research: Peer Assessment 1"
+output: 
+html_document: PA1_template.html
+keep_md: true
+---
 
 
-### What is the average daily activity pattern?
+```r
+# Set Global options to display the code
+opts_chunk$set(echo=TRUE,cache=TRUE)
+```
 
-    1) Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
-    2) Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+## Loading and preprocessing the data
 
+```r
+pa1 <- read.csv("activity.csv")
+```
 
-### Imputing missing values
+## In this section of the assignment missing values will be ignored
 
-    1) Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
-    2) Devise a strategy for filling in all of the missing values in the dataset. 
-	   The strategy does not need to be sophisticated. 
-	   For example: In the document provided I use the mean for that 5-minute interval across all days.
-    3) Create a new dataset that is equal to the original dataset but with the missing data filled in.
-    4) Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+```r
+pa11 <- pa1[!is.na(pa1$step),]
+```
 
+## What is mean total number of steps taken per day?
 
-### Are there differences in activity patterns between weekdays and weekends?
-
-	Note: Use the dataset with the filled-in missing values for this part.
-    1) Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
-	2) Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) 
-	   and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). 
+### 1) Make a histogram of the total number of steps take each day
 
 
+```r
+library(dplyr)
+```
+
+```
+## 
+## Attaching package: 'dplyr'
+## 
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+## 
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+```
+
+```r
+library(ggplot2)
+pa1sumbd <- group_by(pa11,date) %>% summarize(sum(steps))
+names(pa1sumbd)[2] <- 'total_steps'
+g <- ggplot(pa1sumbd,aes(x=date ,y=total_steps))
+plot1 <- 
+  g + geom_bar(stat="identity", position="identity",fill="pink",
+               colour="white") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ggtitle("Total of steps over date \n")
+print(plot1)
+```
+
+![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-4-1.png) 
 
 
 
-# Execution Steps to reproduce the document PA1_template.html:
-
-## Platform and RStudio version used for this assignment:
-
-The analysis and document are produced with 
-RStudio Version 0.98.1028 – 
-© 2009-2013 RStudio, Inc.
-
-In HP Pavillon g series 
-with intel core i3 and 4 Go memories
-OS Windows 7 
+### 2) Calculate and report mean and median of number steps per day
 
 
-## R packages required:
-
-* library(knitr)
-* library(dplyr)
-* library(ggplot2)
-* library(lattice)
-* library(xtable)
-
-
-## How to generate the result html
-
-1. Download the dataset https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip
-2. Ensure you have the analytical data in the file activity.csv under your local directory
-3. Download the file markdown file PA1_template.Rmd into your local directory.
-4. Open R Console
-5. Verify you have all the required libraries above installed, if not please run install.packages(<package_name>) and follow the instructions online.
-6. In R Console run:
-
-> setwd("your local directory")
-
-> library(knitr)
-
-> knit2html("PA1_template.Rmd","PA1_template.html")
-
-7. The file PA1_template.html will be generated under your local directory
+```r
+mnd <- format(round(mean(pa1sumbd$total_steps),2),nsall=2)
+med <- format(round(median(pa1sumbd$total_steps),2),nsall=2)
+```
+- The mean total number of steps taken per day is **10766.19**.
+- The median total number of steps taken per day is **10765**.
 
 
+
+
+
+## What is the average daily activity pattern?
+
+### 1) Time series plot (i.e type ="l") of interval (x-axis) and  average number of steps across all days (y-axis)
+
+
+
+```r
+pa11 <- pa1[!is.na(pa1$step),]
+pa1avebi <- group_by(pa11,interval) %>% summarize(mean(steps))
+names(pa1avebi)[2] <- 'average_steps'
+with(pa1avebi,plot(interval,average_steps, type="l",
+                   ylab="Average of steps across dates",
+                   xlab="Intervals"))
+```
+
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png) 
+
+### 2) Which interval on average across all days contains the maximum number of steps?
+
+
+
+```r
+msteps <- pa1avebi[(pa1avebi$average_steps == max(pa1avebi$average_steps)),1]
+```
+
+The interval with the maximum average number of steps across all days is **835**.
+
+
+## Imputing missing values
+
+### 1) Number rows with missing values
+
+
+```r
+nb <- nrow(pa1[(is.na(pa1$steps)),])
+```
+
+The number of rows in the dataset missing values in the steps variable is **2304**.
+
+
+### 2) Replace missing values with the mean values of the same intervals across all dates
+
+
+```r
+pa1mg  <- 
+  merge(pa1,pa1avebi,by.x="interval",by.y="interval", all=TRUE)
+pa1mg$nsteps <- 
+  ifelse(is.na(pa1mg$steps),pa1mg$average_steps,pa1mg$steps)
+pa1mg$steps <- pa1mg$nsteps
+```
+
+### 3) New dataset with the missing filled-in is pa1mg
+
+### 4) Histogram of the total number of steps taken each day.
+
+
+```r
+#group by date and sum the steps
+pa1mgsumbd <- group_by(pa1mg,date) %>% summarize(sum(steps))
+names(pa1mgsumbd)[2] <- 'total_steps'
+library(ggplot2)
+g <- ggplot(pa1mgsumbd,aes(x=date ,y=total_steps))
+plot10 <- g +
+  geom_bar(stat="identity", position="identity",fill="pink",
+           colour="white") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ggtitle("Total of steps over date \n")
+print(plot10)
+```
+
+![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7-1.png) 
+
+```r
+fmn <- format(round(mean(pa1mgsumbd$total_steps),2),nsall=2)
+fmd <- format(round(median(pa1mgsumbd$total_steps),2),nsall=2)
+```
+
+- The mean total number of steps taken per day is **10766.19**.
+- The median total number of steps taken per day is **10766.19**.
+
+
+
+**Compare the mean and median values in the 2 cases: Without the NAs and with the NAs replaced by the average values.**
+
+
+```r
+library(xtable)
+x <- data.frame(Case=c("Without_NAs","Replaced_NAs_with_mean"),
+                Mean=c(mnd,fmn),
+                Median=c(med,fmd))
+xt <- xtable(x)
+print(xt,type="html")
+```
+
+<!-- html table generated in R 3.1.1 by xtable 1.7-4 package -->
+<!-- Tue Nov 11 22:31:37 2014 -->
+<table border=1>
+<tr> <th>  </th> <th> Case </th> <th> Mean </th> <th> Median </th>  </tr>
+  <tr> <td align="right"> 1 </td> <td> Without_NAs </td> <td> 10766.19 </td> <td> 10765 </td> </tr>
+  <tr> <td align="right"> 2 </td> <td> Replaced_NAs_with_mean </td> <td> 10766.19 </td> <td> 10766.19 </td> </tr>
+   </table>
+
+1. Missing values replaced by the mean number of steps per day and without the missing values, the computed mean value of steps per day is unchanged. 
+2. The median value is synchronized with the mean value in the case the missing values are replaced by the mean value.
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+### 1) Create a factor with 2 levels weekday and weekend
+
+
+```r
+# create the variable day saying the day of the week
+pa1mg$day <- weekdays(as.Date(pa1mg$date))
+
+
+#function identifying weekday and weekend as a vector
+wdwe <- function(a) {
+  res <<- ""
+  for (i in 1:length(a)) { 
+        if (a[i] %in% 
+              c("Monday","Tuesday","Wednesday","Thursday",
+                "Friday")) { res[i] <<- "weekday"
+                             }
+        else {
+          res[i] <<- "weekend"
+          }
+        }
+  res
+  }
+
+# create the variable wdwe identifying weekday and weekend
+pa1mg$wdwe <- wdwe(pa1mg$day)
+
+# Compute the average steps for each interval during weekday 
+pa1mgmnwd <- 
+  filter(pa1mg,wdwe=="weekday") %>%  
+  group_by(interval) %>% summarize(mean(steps))
+names(pa1mgmnwd)[2] <- 'average_steps'
+pa1mgmnwd$wdwe <- rep("weekday",nrow(pa1mgmnwd))
+
+# Compute the average steps for each interval during weekend
+pa1mgmnwe <- 
+  filter(pa1mg,wdwe=="weekend") %>%  
+  group_by(interval) %>% summarize(mean(steps))
+names(pa1mgmnwe)[2] <- 'average_steps'
+pa1mgmnwe$wdwe <- rep("weekend",nrow(pa1mgmnwe))
+
+# Combine the 2 sets of data 
+pa1mgmn <- rbind(pa1mgmnwd,pa1mgmnwe)
+
+#transform the variable wdwe into factor for lattice panel plots
+pa1mgmn$wdwe <- as.factor(pa1mgmn$wdwe)
+```
+
+### 2) Panel plot time series interval (x-axis) average steps taken (y-axis) segregated by weekday or weekend
+
+
+```r
+# Lattice panel plot
+library(lattice)
+
+xyplot(pa1mgmn$average_steps~pa1mgmn$interval | pa1mgmn$wdwe, 
+       type="l", layout=c(1,2),
+       ylab="Number of steps",
+       xlab="Interval"
+       )
+```
+
+![plot of chunk unnamed-chunk-10](figure/unnamed-chunk-10-1.png) 
+
+```r
+xyplot(pa1mgmn$average_steps~pa1mgmn$interval | pa1mgmn$wdwe,
+       ylab="Number of steps",
+	     xlab="Interval",
+       type="l", layout=c(1,2),
+	     panel= function(x, y, ...){
+             panel.xyplot(x,y,...)
+		         panel.lmline(x,y,col=2)
+		         }
+      )
+```
+
+![plot of chunk unnamed-chunk-10](figure/unnamed-chunk-10-2.png) 
+
+Weekend actity is more spread across all intervals, there are more activities in the afternoon in comparison to the weekdays. The weekday has pick of activities around the interval 835. By adding the linear regression line, we can see the weekend activity level is slidly higher than the weekday activity level.
